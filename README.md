@@ -1,17 +1,30 @@
-# BlueOS-Water-Linked-DVL
+# BlueOS-Cygnus-UT
+
+BlueOS-Cygnus-UT is a BlueOS Extension for the Cygnus Mini ROV Mountable Ultrasonic Thickness Gauge
 
 ## Changelog
 
-### v1.0.2
- - Improved style
+### v0.0.1
+ - Initial development release
 
-### v1.0.1
- - Fixed an issue where the driver was sending Rangefinder messages with invalid data
+## User Installation
 
-This is a docker implementation of a Waterlinked DVL A50 driver as a BlueOS Extension.
-
-## Install
-
-Install it from [BlueOS extensions tab](https://docs.bluerobotics.com/ardusub-zola/software/onboard/BlueOS-1.1/extensions/).
+Install it from [BlueOS extensions tab](https://blueos.cloud/docs/software/onboard/BlueOS-1.1/extensions/).
 
 The service will show in the "Extension Manager" section in BlueOS, where there are some configuration options.
+
+## Developer Info
+
+To build:
+
+Enable qemu static support with a docker:
+
+```
+docker buildx create --name multiarch --driver docker-container --use
+docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+```
+
+Then build it:
+
+`docker buildx build --platform linux/amd64,linux/arm/v7 . -t YOURDOCKERHUBUSER/YOURDOCKERHUBREPO:latest --output type=registry
+`

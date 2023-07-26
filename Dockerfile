@@ -5,19 +5,31 @@ RUN apt update && apt install -y nmap
 # Create default user folder
 RUN mkdir -p /home/pi
 
-# Install dvl service
-COPY dvl-a50 /home/pi/dvl-a50
-RUN cd /home/pi/dvl-a50 && pip3 install .
+# Install cygnus service
+COPY cygnus /home/pi/cygnus
+RUN cd /home/pi/cygnus && pip3 install .
 
-LABEL version="1.0.3"
+LABEL version="0.0.1"
 LABEL permissions='\
 {\
-    "NetworkMode": "host"\
+ "ExposedPorts": {\
+   "8000/tcp": {}\
+  },\
+  "HostConfig": {\
+    "Binds":["/root/.config:/root/.config"],\
+    "PortBindings": {\
+      "8000/tcp": [\
+        {\
+          "HostPort": ""\
+        }\
+      ]\
+    }\
+  }\
 }'
 LABEL authors='[\
     {\
-        "name": "Willian Galvani",\
-        "email": "willian@bluerobotics.com"\
+        "name": "Rustom Jehangir",\
+        "email": "rusty@bluerobotics.com"\
     }\
 ]'
 LABEL company='{\
@@ -27,15 +39,14 @@ LABEL company='{\
     }'
 LABEL type="device-integration"
 LABEL tags='[\
-        "positioning",\
-        "navigation",\
-        "doppler-velocity-log"\
+        "inspection",\
+        "sensor"\
     ]'
-LABEL readme='https://raw.githubusercontent.com/bluerobotics/BlueOS-Water-Linked-DVL/{tag}/README.md'
+LABEL readme='https://raw.githubusercontent.com/rjehangir/BlueOS-Cygnus-UT/{tag}/README.md'
 LABEL links='{\
-        "website": "https://github.com/bluerobotics/BlueOS-Water-Linked-DVL",\
-        "support": "https://github.com/bluerobotics/BlueOS-Water-Linked-DVL/issues"\
+        "website": "https://github.com/rjehangir/BlueOS-Cygnus-UT",\
+        "support": "https://github.com/rjehangir/BlueOS-Cygnus-UT/issues"\
     }'
 LABEL requirements="core >= 1.1"
 
-ENTRYPOINT /home/pi/dvl-a50/main.py
+ENTRYPOINT /home/pi/cygnus/main.py

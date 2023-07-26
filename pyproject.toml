@@ -1,9 +1,9 @@
 # This file is used only for setting up CI. no deployment is done with it
 
 [tool.poetry]
-name = "blueos-dvl"
+name = "blueos-cygnus"
 version = "0.0.1"
-description = "Blue Robotics BlueOS DVL A-50 Extension"
+description = "Blue Robotics BlueOS Cygnus Ultrasonic Thickness Gauge Extension"
 authors = ["software@bluerobotics.com"]
 license = "MIT"
 
