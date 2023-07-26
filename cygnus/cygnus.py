@@ -129,9 +129,9 @@ class CygnusDriver(threading.Thread):
             logger.warning("using default instead")
         return "Failed to remember logged data"
 
-    def get_status(self) -> dict:
+    def get_data(self) -> dict:
         """
-        Returns a dict with the current status
+        Returns a dict with the current data
         """
         return {
             "status": self.status,

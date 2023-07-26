@@ -21,12 +21,12 @@ class API:
     def __init__(self, device: CygnusDriver):
         self.device = device
 
-    def get_status(self) -> str:
+    def get_data(self) -> str:
         """
         Returns the driver status as a JSON containing the keys
         status, orientation, hostname, and enabled
         """
-        return json.dumps(self.device.get_status())
+        return json.dumps(self.device.get_data())
 
     def set_serial_port(self, port) -> bool:
         """
@@ -68,9 +68,9 @@ if __name__ == "__main__":
     driver = CygnusDriver()
     api = API(driver)
 
-    @app.route("/get_status")
-    def get_status():
-        return api.get_status()
+    @app.route("/get_data")
+    def get_data():
+        return api.get_data()
 
     @app.route("/enable/<enable>")
     def set_enabled(enable: str):

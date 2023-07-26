@@ -149,7 +149,6 @@
 <script src="/static/js/vue.js"></script>
 <script src="/static/js/vuetify.js"></script>
 <script src="/static/js/axios.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.3.0/chart.js"></script>
 
 <script>
 	Vue.config.devtools = true;
@@ -181,8 +180,8 @@
 			}
 		},
 		methods: {
-			updateStatus() {
-				axios.get('/get_status', { timeout: 1000 })
+			update() {
+				axios.get('/get_data', { timeout: 1000 })
 					.then((response) => {
 						// handle success
 						let data = response.data
@@ -354,8 +353,8 @@
 		mounted() {
 			console.log('mounted!')
 			this.loadLog()
-			this.updateStatus()
-			setInterval(this.updateStatus, 1000)
+			this.update()
+			setInterval(this.update, 1000)
 		}
 	})
 
