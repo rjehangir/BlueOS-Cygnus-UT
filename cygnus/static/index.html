@@ -125,7 +125,7 @@
 										<v-select
 											v-model="port"
 											label="Serial Port"
-											:items="['Demo Mode', '/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/tty.usbserial-DP05H6FR']"
+											:items="serialPorts"
 											@change="setPort($event)"
 										></v-select>
 										<v-select
@@ -161,6 +161,7 @@
 				enabled: null,
 				port: null,
 				baud: 2400,
+				serialPorts: ["Demo Mode"],
 				thickness: null,
 				thickness_str: null,
 				echo_count: 0,
@@ -306,6 +307,23 @@
 		      	this.saveLog()
 		    },
 
+		    getSerialPorts() {
+		    	axios.get('/get_serial_ports', { timeout: 1000 })
+					.then((response) => {
+						// handle success
+						let data = response.data
+						if (this.port !== null && !data.includes(this.port) && this.port !== "Demo Mode") {
+							data.unshift(this.port) // Always include the last used port, even if it doesn't exist, just so it doesn't get removed unless the user removes it
+						}
+						data.unshift("Demo Mode")
+						this.serialPorts = data
+					})
+					.catch((error) => {
+						this.status = `Unable to talk to backend service: ${error}`
+						console.log(error);
+					})
+		    },
+
 		    saveLog() {
 				const request = new XMLHttpRequest();
 				request.timeout = 800;
@@ -353,6 +371,7 @@
 		mounted() {
 			console.log('mounted!')
 			this.loadLog()
+			this.getSerialPorts()
 			this.update()
 			setInterval(this.update, 1000)
 		}

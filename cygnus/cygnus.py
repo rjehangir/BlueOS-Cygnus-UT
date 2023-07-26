@@ -8,6 +8,7 @@ import threading
 import time
 import random
 import serial
+import serial.tools.list_ports
 from enum import Enum
 from select import select
 from typing import Any, Dict, List
@@ -32,6 +33,7 @@ class CygnusDriver(threading.Thread):
     mav = Mavlink2RestHelper()
     enabled = False
     serial_port = ""
+    serial_ports = []
     baud = 2400
     timeout = 3  # timeout in seconds
     settings_path = os.path.join(os.path.expanduser("~"), ".config", "cygnus", "settings.json")
@@ -53,6 +55,16 @@ class CygnusDriver(threading.Thread):
     def report_status(self, msg: str) -> None:
         self.status = msg
         logger.debug(msg)
+
+    def get_serial_ports(self):
+        valid_ports = []
+        ports = serial.tools.list_ports.comports()
+
+        for port in ports:
+            if "/dev/ttyUSB" in port.device or "/dev/ttyACM" in port.device or "/dev/tty.usbserial" in port.device:
+                valid_ports.append(port.device)
+
+        return valid_ports
 
     def load_settings(self) -> None:
         """

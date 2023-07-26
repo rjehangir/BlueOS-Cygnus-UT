@@ -28,6 +28,12 @@ class API:
         """
         return json.dumps(self.device.get_data())
 
+    def get_serial_ports(self):
+        """
+        Get the available serial ports to show to the user
+        """
+        return json.dumps(self.device.get_serial_ports())
+
     def set_serial_port(self, port) -> bool:
         """
         Sets the port info
@@ -71,6 +77,10 @@ if __name__ == "__main__":
     @app.route("/get_data")
     def get_data():
         return api.get_data()
+
+    @app.route("/get_serial_ports")
+    def get_serial_ports():
+        return api.get_serial_ports()
 
     @app.route("/enable/<enable>")
     def set_enabled(enable: str):
