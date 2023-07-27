@@ -54,6 +54,12 @@ class API:
             return self.device.set_enabled(enabled == "true")
         return False 
 
+    def set_material(self, material, soundvelocity) -> bool:
+        """
+        Sets material and sound velocity
+        """
+        return self.device.set_material(unquote(material), soundvelocity) 
+
     def set_sound_velocity(self, velocity) -> bool:
         """
         Sets the sound velocity
@@ -93,6 +99,10 @@ if __name__ == "__main__":
     @app.route("/setbaud/<int:baud>")
     def set_baud(baud: int):
         return str(api.set_baud(baud))
+
+    @app.route("/setmaterial/<material>/<int:soundvelocity>")
+    def set_material(material, soundvelocity):
+        return str(api.set_material(material, soundvelocity))
 
     @app.route('/savelog', methods=['POST'])
     def save_log():

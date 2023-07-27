@@ -30,14 +30,24 @@
 						<v-container fluid>
 							<v-row>
 								<v-col class="col-4 col-sm-4 col-md-4">
-									<v-card height="400">
-										<h2>User Controls</h2>
+									<v-card height="450">
+										<h2 style="margin-bottom:10px">User Controls</h2>
 										<v-select
-									      v-model="selectedMaterial"
-									      :items="materials"
-									      label="Select Material"
-									      outlined
+											v-model="selectedMaterial"
+											:items="materials"
+											label="Select Material"
+											@change="onMaterialChange"
+											outlined
 									    ></v-select>
+									    <v-text-field
+											label="Sound Velocity"
+											v-model="soundVelocity"
+											:readonly="!isCustomMaterial"
+											:pattern="inputPattern"
+											@input="onSoundVelocityInput"
+											suffix="m/s"
+											outlined
+								        ></v-text-field>
 									    <h2>Live Data</h2>
 										<v-list flat>
 											<v-list-item-group>
@@ -64,7 +74,7 @@
 									</v-card>
 								</v-col>
 								<v-col class="col-8 col-sm-8 col-md-8">
-									<v-card height="400">
+									<v-card height="450">
 										
 									</v-card>
 								</v-col>
@@ -152,6 +162,37 @@
 
 <script>
 	Vue.config.devtools = true;
+	const materialData = [
+		{ material: "CUSTOM", soundVelocity: 0 },
+		{ material: "Aluminum (alloyed)", soundVelocity: 6380 },
+		{ material: "Aluminum (2014)", soundVelocity: 6320 },
+		{ material: "Aluminum (2024 T4)", soundVelocity: 6370 },
+		{ material: "Aluminum (2117 T4)", soundVelocity: 6500 },
+		{ material: "Brass (CuZn40)", soundVelocity: 4400 },
+		{ material: "Brass (Naval)", soundVelocity: 4330 },
+		{ material: "Brass (CuZn30)", soundVelocity: 4700 },
+		{ material: "Copper", soundVelocity: 4850 },
+		{ material: "Grey Cast Iron", soundVelocity: 4600 },
+		{ material: "Inconel", soundVelocity: 5700 },
+		{ material: "Lead", soundVelocity: 2150 },
+		{ material: "Monel", soundVelocity: 5400 },
+		{ material: "Nickel", soundVelocity: 5630 },
+		{ material: "Phosphor Bronze", soundVelocity: 3530 },
+		{ material: "Mild Steel", soundVelocity: 5920 },
+		{ material: "Tool Steel", soundVelocity: 5870 },
+		{ material: "Stainless Steel 302", soundVelocity: 5660 },
+		{ material: "Stainless Steel 347", soundVelocity: 5790 },
+		{ material: "Stainless Steel 314", soundVelocity: 5715 },
+		{ material: "Stainless Steel 316", soundVelocity: 5750 },
+		{ material: "F51 Duplex Steel UNS S31803", soundVelocity: 5733 },
+		{ material: "Core Ten Steel EN12223 S355-J0", soundVelocity: 5920 },
+		{ material: "Tin", soundVelocity: 3320 },
+		{ material: "Titanium", soundVelocity: 6165 },
+		{ material: "Tungsten Carbide", soundVelocity: 6660 },
+		{ material: "Epoxy Resin", soundVelocity: 2500 },
+		{ material: "Acrylic", soundVelocity: 2730 },
+		{ material: "Nylon (Polyamide)", soundVelocity: 2620 }
+	];
 	new Vue({
 		el: '#app',
 		vuetify: new Vuetify(),
@@ -168,8 +209,9 @@
 				tab: "measurement",
 				max50chars: v => v.length <= 50 || 'Input too long!',
         		pagination: {},
-        		materials: ['Steel', 'Aluminum'],
+        		materials: this.getMaterials(),
         		selectedMaterial: 'Steel',
+        		soundVelocity: 0,
 				headers: [
 					{ text: 'Date/Time', align: 'start', sortable: false, value: 'date' },
 					{ text: 'Description (click to edit)', sortable: false, value: 'name' },
@@ -178,6 +220,21 @@
 				],
 				log: [],
 				selectedItems: [],
+			}
+		},
+		computed: {
+			isCustomMaterial() {
+			  	return this.selectedMaterial === "CUSTOM"; // Check if material is "CUSTOM"
+			},
+
+			inputPattern() {
+				if (this.isCustomMaterial) {
+					// If it's CUSTOM, create a pattern for the allowed range
+					return `^(0|[1-9]\\d{0,3}|20000)$`;
+				} else {
+					// If it's not CUSTOM, an empty pattern allows any value
+					return "";
+				}
 			}
 		},
 		methods: {
@@ -196,6 +253,10 @@
 						this.is_valid = data.is_valid
 						this.raw_thickness = data.raw_thickness
 						this.thickness = data.thickness
+						this.selectedMaterial = data.material
+						if ( this.soundVelocity === 0 || !this.isCustomMaterial ) {
+							this.soundVelocity = data.sound_velocity
+						}
 
 						this.setThicknessString()
 					})
@@ -204,8 +265,44 @@
 						console.log(error);
 					})
 			},
+
 			setThicknessString() {
 				this.thickness_str = this.thickness.toFixed(2) + " " + this.units
+			},
+
+			getSoundVelocityByMaterial(material) {
+				const foundMaterial = materialData.find(item => item.material === material);
+				if (foundMaterial) {
+					return foundMaterial.soundVelocity;
+				} else {
+					return null; // Return null if the material is not found in the data
+				}
+			},
+
+			soundVelocityValue() {
+				if (this.selectedMaterial === "CUSTOM") {
+					return this.soundVelocity; // If material is "CUSTOM", allow input
+				} else {
+					return getSoundVelocityByMaterial(this.selectedMaterial);
+				}
+		    },
+
+		    onSoundVelocityInput() {
+				this.soundVelocity = this.soundVelocity.replace(/[^\d.-]/g, '');
+			},
+
+			onMaterialChange() {
+				if ( !this.isCustomMaterial ) {
+					this.soundVelocity = this.getSoundVelocityByMaterial(this.selectedMaterial)
+				}
+				const request = new XMLHttpRequest();
+				request.timeout = 800;
+				request.open('GET', 'setmaterial/' + encodeURIComponent(encodeURIComponent(this.selectedMaterial)) + '/' + this.soundVelocity, true);
+				request.send();
+			},
+
+			getMaterials() {
+				return materialData.map(item => item.material);
 			},
 
 			/* Toggles driver on/off */

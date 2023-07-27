@@ -39,6 +39,7 @@ class CygnusDriver(threading.Thread):
     settings_path = os.path.join(os.path.expanduser("~"), ".config", "cygnus", "settings.json")
     log_path = os.path.join(os.path.expanduser("~"), ".config", "cygnus", "log.json")
 
+    material = ""
     sound_velocity = 6400 # m/s
     resolution = 0 # 0 for low, 1 for high
     units = 0 # 0 for mm, 1 for inches
@@ -58,13 +59,24 @@ class CygnusDriver(threading.Thread):
 
     def get_serial_ports(self):
         valid_ports = []
-        ports = serial.tools.list_ports.comports()
+        ports = serial.tools.list_ports.comports(include_links=True)
 
         for port in ports:
-            if "/dev/ttyUSB" in port.device or "/dev/ttyACM" in port.device or "/dev/tty.usbserial" in port.device:
+            self.report_status(port.device)
+
+            # comports doesn't find "tty" devices on Mac, but does find the "cu" version, so replace
+            # the "cu" with "tty" to create a valid port.
+            if "/dev/cu.usb" in port.device:
+                valid_ports.append(self.replace_cu_with_tty(port.device))
+            if "/dev/ttyUSB" in port.device or "/dev/ttyACM" in port.device or "/dev/tty.usb" in port.device:
                 valid_ports.append(port.device)
 
         return valid_ports
+
+    def replace_cu_with_tty(self, input_string):
+        # Replace "cu" with "tty" and return the updated string
+        updated_string = input_string.replace("cu", "tty")
+        return updated_string
 
     def load_settings(self) -> None:
         """
@@ -77,6 +89,7 @@ class CygnusDriver(threading.Thread):
                 self.enabled = data["enabled"]
                 self.serial_port = data["port"]
                 self.baud = data["baud"]
+                self.material = data["material"]
                 logger.debug("Loaded settings: ", data)
         except FileNotFoundError:
             logger.warning("Settings file not found, using default.")
@@ -106,7 +119,8 @@ class CygnusDriver(threading.Thread):
                     {
                         "enabled": self.enabled,
                         "port": self.serial_port,
-                        "baud": self.baud
+                        "baud": self.baud,
+                        "material": self.material
                     }
                 )
             )
@@ -155,7 +169,9 @@ class CygnusDriver(threading.Thread):
             "echo_count": self.echo_count,
             "is_valid": self.is_valid,
             "raw_thickness": self.raw_thickness,
-            "thickness": self.thickness
+            "thickness": self.thickness,
+            "material": self.material,
+            "sound_velocity": self.sound_velocity
         }
 
     def setup_mavlink(self) -> None:
@@ -201,10 +217,11 @@ class CygnusDriver(threading.Thread):
         self.save_settings()
         return True
 
-    def set_sound_velocity(self, velocity) -> bool:
+    def set_material(self, material, velocity) -> bool:
         """
-        Sets sound velocity
+        Sets material and sound velocity
         """
+        self.material = material
         self.sound_velocity = velocity
         self.save_settings()
         return True
