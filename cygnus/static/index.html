@@ -3,7 +3,6 @@
 <head>
 	<title>Cygnus UT Gauge</title>
 
-	<link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
 	<link href="/static/css/materialdesignicons.min.css" rel="stylesheet">
 	<link href="/static/css/vuetify.min.css" rel="stylesheet">
 	<link href="/static/css/style.css" rel="stylesheet">
@@ -42,13 +41,18 @@
 									    <v-text-field
 											label="Sound Velocity"
 											v-model="soundVelocity"
-											:readonly="!isCustomMaterial"
+											:disabled="!isCustomMaterial"
 											:pattern="inputPattern"
 											@input="onSoundVelocityInput"
 											suffix="m/s"
 											outlined
 								        ></v-text-field>
-									    <h2>Live Data</h2>
+									    <h2>Live Data 
+									    	<v-chip :color="chipColor" dark>
+										    	{{ is_valid ? 'Valid Measurement' : 'Invalid Measurement' }}
+											</v-chip>
+										</h2>
+									    
 										<v-list flat>
 											<v-list-item-group>
 												<v-list-item>
@@ -206,6 +210,7 @@
 				thickness: null,
 				thickness_str: null,
 				echo_count: 0,
+				is_valid: false,
 				tab: "measurement",
 				max50chars: v => v.length <= 50 || 'Input too long!',
         		pagination: {},
@@ -235,7 +240,11 @@
 					// If it's not CUSTOM, an empty pattern allows any value
 					return "";
 				}
-			}
+			},
+
+			chipColor() {
+		        return this.is_valid ? 'green' : 'grey';
+		    },
 		},
 		methods: {
 			update() {

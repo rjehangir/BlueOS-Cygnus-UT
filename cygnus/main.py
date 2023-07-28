@@ -60,12 +60,6 @@ class API:
         """
         return self.device.set_material(unquote(material), soundvelocity) 
 
-    def set_sound_velocity(self, velocity) -> bool:
-        """
-        Sets the sound velocity
-        """
-        return self.device.set_sound_velocity(velocity) 
-
     def set_message_type(self, messagetype: str):
         self.device.set_should_send(messagetype)
 

@@ -58,6 +58,9 @@ class CygnusDriver(threading.Thread):
         logger.debug(msg)
 
     def get_serial_ports(self):
+        """
+        Enumerate available serial port to show in the dropdown menu
+        """
         valid_ports = []
         ports = serial.tools.list_ports.comports(include_links=True)
 
@@ -74,7 +77,9 @@ class CygnusDriver(threading.Thread):
         return valid_ports
 
     def replace_cu_with_tty(self, input_string):
-        # Replace "cu" with "tty" and return the updated string
+        """
+        Replace "cu" with "tty" and return the updated string
+        """
         updated_string = input_string.replace("cu", "tty")
         return updated_string
 
@@ -143,6 +148,9 @@ class CygnusDriver(threading.Thread):
         return "Failed to save log data"
 
     def load_log(self):
+        """
+        Load data log file
+        """
         try:
             with open(self.log_path) as log:
                 return json.load(log)
@@ -252,6 +260,9 @@ class CygnusDriver(threading.Thread):
         self.connect()
 
     def fakeRead(self):
+        """
+        Generate a fake reading in a random range
+        """
         self.resolution = 0
         self.units = 0
         self.reading_range = 0
@@ -274,12 +285,6 @@ class CygnusDriver(threading.Thread):
                 self.reading_range = status[0] & 0b00010000 > 0
                 self.echo_count = (status[0] & 0b00001100) >> 2
                 self.is_valid = not status[0] & 0b00000001
-
-                # self.report_status(self.resolution) 
-                # self.report_status(self.units) 
-                # self.report_status(self.reading_range)
-                # self.report_status(self.echo_count)  
-                # self.report_status(self.is_valid) 
 
                 if self.is_valid:
                     data = int(self.ser.read(4))
