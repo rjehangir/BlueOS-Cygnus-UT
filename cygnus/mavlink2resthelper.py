@@ -8,7 +8,8 @@ from loguru import logger
 
 from blueoshelper import post, request
 
-MAVLINK2REST_URL = "http://127.0.0.1/mavlink2rest"
+#MAVLINK2REST_URL = "http://127.0.0.1/mavlink2rest"
+MAVLINK2REST_URL = "http://192.168.194.132/mavlink2rest"
 GPS_GLOBAL_ORIGIN_ID = 49
 
 # holds the last status so we dont flood it

@@ -1,5 +1,5 @@
 """
-Code for integration of Waterlinked DVL A50 with Companion and ArduSub
+Code for integration of Cygnus Mini ROV Mk4 Ultrasonic Thickness Gauge with BlueOS
 """
 import json
 import math
@@ -189,7 +189,7 @@ class CygnusDriver(threading.Thread):
         """
         self.report_status("Setting up MAVLink streams...")
         # we don't actually need anything in this example
-        #self.mav.ensure_message_frequency("ATTITUDE", 30, 5)
+        self.mav.ensure_message_frequency("ATTITUDE", 30, 5)
 
     def wait_for_vehicle(self):
         """
@@ -316,8 +316,8 @@ class CygnusDriver(threading.Thread):
 
     def run(self):
         self.load_settings()
-        #self.wait_for_vehicle()
-        #self.setup_mavlink()
+        self.wait_for_vehicle()
+        self.setup_mavlink()
         time.sleep(1)
         self.report_status("Running")
         self.last_recv_time = time.time()
@@ -328,6 +328,9 @@ class CygnusDriver(threading.Thread):
             if not self.enabled:
                 time.sleep(1)
                 continue
+
+            depth = float(self.mav.get("/VFR_HUD/message/alt"))
+            self.report_status(depth)
 
             connected = self.ser.is_open or self.serial_port == "Demo Mode"          
 
