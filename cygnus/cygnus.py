@@ -329,8 +329,10 @@ class CygnusDriver(threading.Thread):
                 time.sleep(1)
                 continue
 
-            depth = float(self.mav.get("/VFR_HUD/message/alt"))
-            self.report_status(depth)
+            try:
+                depth = float(self.mav.get("/VFR_HUD/message/alt"))
+            except TypeError:
+                pass
 
             connected = self.ser.is_open or self.serial_port == "Demo Mode"          
 

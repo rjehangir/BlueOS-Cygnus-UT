@@ -27,65 +27,143 @@
 				<v-tabs-items v-model="tab">
 					<v-tab-item key="measurement">
 						<v-container fluid>
+							<v-row align="center">
+								<v-col cols="12" sm="4" md="4">
+									<v-select
+										v-model="selectedMaterial"
+										:items="materials"
+										label="Select Material"
+										@change="onMaterialChange"
+										outlined
+								    ></v-select>
+								</v-col>
+								<v-col cols="12" sm="2" md="2">
+								    <v-text-field
+										label="Sound Velocity"
+										v-model="soundVelocity"
+										:disabled="!isCustomMaterial"
+										:pattern="inputPattern"
+										@input="onSoundVelocityInput"
+										suffix="m/s"
+										outlined
+							        ></v-text-field>
+							    </v-col>
+							    <v-col cols="12" sm="3" md="3">
+									<v-btn
+									@click="toggleIcon"
+									outlined
+									rounded
+									text
+									>
+									<v-icon large>{{ icon }}</v-icon>
+									</v-btn>
+								    <v-chip :color="chipColor" dark>
+								    	{{ is_valid ? 'Valid Measurement' : 'Invalid Measurement' }}
+									</v-chip>
+							    </v-col>
+							    <v-col cols="12" sm="3" md="3">
+								    <!-- -->
+							    </v-col>
+							</v-row>
 							<v-row>
-								<v-col class="col-4 col-sm-4 col-md-4">
-									<v-card height="450">
-										<h2 style="margin-bottom:10px">User Controls</h2>
-										<v-select
-											v-model="selectedMaterial"
-											:items="materials"
-											label="Select Material"
-											@change="onMaterialChange"
-											outlined
-									    ></v-select>
-									    <v-text-field
-											label="Sound Velocity"
-											v-model="soundVelocity"
-											:disabled="!isCustomMaterial"
-											:pattern="inputPattern"
-											@input="onSoundVelocityInput"
-											suffix="m/s"
-											outlined
-								        ></v-text-field>
-									    <h2>Live Data 
-									    	<v-chip :color="chipColor" dark>
-										    	{{ is_valid ? 'Valid Measurement' : 'Invalid Measurement' }}
-											</v-chip>
-										</h2>
-									    
-										<v-list flat>
-											<v-list-item-group>
-												<v-list-item>
-													<v-list-item-icon><v-icon large>mdi-arrow-collapse-horizontal</v-icon></v-list-item-icon>
-													<v-list-item-content>
-														<v-list-item-title style="font-family:consolas;font-size:1.3em">{{thickness_str}} thickness</v-list-item-title>
-													</v-list-item-content>
-												</v-list-item>
-												<v-list-item>
-													<v-list-item-icon><v-icon large>mdi-counter</v-icon></v-list-item-icon>
-													<v-list-item-content>
-														<v-list-item-title style="font-family:consolas;font-size:1.3em">{{echo_count}} echoes</v-list-item-title>
-													</v-list-item-content>
-												</v-list-item>
-												<!-- <v-list-item>
-													<v-list-item-icon><v-icon large>mdi-arrow-down-bold</v-icon></v-list-item-icon>
-													<v-list-item-content>
-														<v-list-item-title style="font-family:consolas;font-size:1.3em">12.1 m depth</v-list-item-title>
-													</v-list-item-content>
-												</v-list-item> -->
-											</v-list-item-group>
-										</v-list>
+
+							    <v-col cols="12" sm="4" md="4">
+									<v-card outlined color="#2699d0" dark height="300">
+										<v-list-item two-line>
+											<v-list-item-content>
+										        <div class="text-overline mb-4">
+										          <v-icon large>mdi-arrow-collapse-horizontal</v-icon> Thickness
+										        </div>
+										        <v-list-item-title class="text-h2 mb-1" style="font-family:consolas !important;margin-top:30px;margin-bottom:50px">
+										          {{thickness_str}}
+										        </v-list-item-title>
+									      	</v-list-item-content>
+									      </v-list-item>
+									      <v-card-actions>
+										      <v-btn
+										        outlined
+										        rounded
+										        text
+										        @click="logMeasurement"
+    											style="background-color: white; color: #2699d0;font-weight:bold"
+										      >
+										        Log Measurement
+										      </v-btn>
+										  </v-card-actions>
 									</v-card>
 								</v-col>
-								<v-col class="col-8 col-sm-8 col-md-8">
-									<v-card height="450">
-										
+
+							    <v-col cols="12" sm="8" md="8">
+									<v-card height="300" outlined>
+										<canvas id="chartCanvas"></canvas>
 									</v-card>
 								</v-col>
+
+								
+
+								<v-col cols="12" sm="3" md="3">
+									<v-card outlined color=orange dark>
+										<v-list-item two-line>
+											<v-list-item-content>
+										        <div class="text-overline mb-4">
+										          <v-icon large>mdi-counter</v-icon> Echoes
+										        </div>
+										        <v-list-item-title class="text-h5 mb-1" style="font-family:consolas !important;">
+										          {{echo_count}} echoes
+										        </v-list-item-title>
+									      	</v-list-item-content>
+									      </v-list-item>
+									</v-card>
+								</v-col>
+
+								<v-col cols="12" sm="3" md="3">
+									<v-card outlined color=grey dark>
+										<v-list-item two-line>
+											<v-list-item-content>
+										        <div class="text-overline mb-4">
+										          <v-icon large>mdi-arrow-expand-down</v-icon> Depth
+										        </div>
+										        <v-list-item-title class="text-h5 mb-1" style="font-family:consolas !important;">
+										          {{depth}} meters
+										        </v-list-item-title>
+									      	</v-list-item-content>
+									      </v-list-item>
+									</v-card>
+								</v-col>	
+
+								<v-col cols="12" sm="3" md="3">
+									<v-card outlined color=red dark>
+										<v-list-item two-line>
+											<v-list-item-content>
+										        <div class="text-overline mb-4">
+										          <v-icon large>mdi-cog</v-icon> Something
+										        </div>
+										        <v-list-item-title class="text-h5 mb-1">
+										          {{ is_valid ? 'Valid' : 'Invalid' }}
+										        </v-list-item-title>
+									      	</v-list-item-content>
+									      </v-list-item>
+									</v-card>
+								</v-col>	
+
+								<v-col cols="12" sm="3" md="3">
+									<v-card outlined color=green dark>
+										<v-list-item two-line>
+											<v-list-item-content>
+										        <div class="text-overline mb-4">
+										          <v-icon large>mdi-cog</v-icon> Status
+										        </div>
+										        <v-list-item-title class="text-h5 mb-1">
+										          {{ is_valid ? 'Valid' : 'Invalid' }}
+										        </v-list-item-title>
+									      	</v-list-item-content>
+									      </v-list-item>
+									</v-card>
+								</v-col>							
 							</v-row>
 							<v-row>
 								<v-col class="col-12 col-sm-12 col-md-12">
-									<v-card>
+									<v-card outlined>
 										<v-toolbar flat>
 											<v-toolbar-title>Recorded Measurements</v-toolbar-title>
 											<v-spacer></v-spacer>
@@ -163,6 +241,7 @@
 <script src="/static/js/vue.js"></script>
 <script src="/static/js/vuetify.js"></script>
 <script src="/static/js/axios.min.js"></script>
+<script src="/static/js/chart.js"></script>
 
 <script>
 	Vue.config.devtools = true;
@@ -210,6 +289,7 @@
 				thickness: null,
 				thickness_str: null,
 				echo_count: 0,
+				depth: 0,
 				is_valid: false,
 				tab: "measurement",
 				max50chars: v => v.length <= 50 || 'Input too long!',
@@ -217,6 +297,7 @@
         		materials: this.getMaterials(),
         		selectedMaterial: 'Steel',
         		soundVelocity: 0,
+        		icon: 'mdi-play', // Initial icon is the play icon
 				headers: [
 					{ text: 'Date/Time', align: 'start', sortable: false, value: 'date' },
 					{ text: 'Description (click to edit)', sortable: false, value: 'name' },
@@ -225,6 +306,17 @@
 				],
 				log: [],
 				selectedItems: [],
+				myChart: null,
+		        chartData: {
+		          labels: [],
+		          datasets: [{
+		            label: 'Data Points',
+		            backgroundColor: '#2699d0', // Blue color for bars
+					borderColor: '#2699d0', // Blue border color for bars
+		            borderWidth: 1,
+		            data: []
+		          }]
+		        }
 			}
 		},
 		computed: {
@@ -248,6 +340,11 @@
 		},
 		methods: {
 			update() {
+				// Create the chart if is hasn't already. This if ensures that the element is available.
+				if ( !this.chartInitialized && document.getElementById('chartCanvas') !== null ) {
+					this.initChart()
+				}
+
 				axios.get('/get_data', { timeout: 1000 })
 					.then((response) => {
 						// handle success
@@ -268,12 +365,68 @@
 						}
 
 						this.setThicknessString()
+
+						if ( this.chartInitialized ) {
+							this.addDataPoint(this.thickness)
+						}
 					})
 					.catch((error) => {
 						this.status = `Unable to talk to backend service: ${error}`
 						console.log(error);
 					})
 			},
+
+			initChart() {
+				const ctx = document.getElementById('chartCanvas').getContext('2d');
+		        this.myChart = new Chart(ctx, {
+		          type: 'bar',
+		          data: this.chartData,
+		          options: {
+		            responsive: true,
+		            maintainAspectRatio: false,
+		            scales: {
+		            	x: {
+							// title: {
+							// 	display: true,
+							// 	text: 'Measurements',
+							// 	font: {
+							// 		size: 16 // Increase font size for x-axis title
+							// 	}	
+							// }
+						},
+						y: {
+							beginAtZero: true,
+							title: {
+								display: true,
+							 	text: 'Thickness (mm)',
+							 	font: {
+									size: 16 // Increase font size for x-axis title
+								}	
+							}
+						}
+		            },
+		            plugins: {
+		            	legend: {
+		            		display: false
+		            	}
+		            },
+		            animation: {
+				    	duration: 0 // Set animation duration to 0 to remove animation
+				    }
+		          }
+		        });
+
+		        // Add 20 data points so the chart is fixed width
+		        for (let i = 0; i < 20; i++) {
+			      	this.addDataPoint(0)
+			    }
+		        this.chartInitialized = true;
+			},
+
+			toggleIcon() {
+		        // Toggle the icon between play and stop
+		        this.icon = this.icon === 'mdi-play' ? 'mdi-stop' : 'mdi-play';
+		    },
 
 			setThicknessString() {
 				this.thickness_str = this.thickness.toFixed(2) + " " + this.units
@@ -471,11 +624,27 @@
 				};
 
 				request.send();
+			},
+
+			addDataPoint(value) {
+				// Add a new data point
+				this.chartData.labels.push("");
+				this.chartData.datasets[0].data.push(value);
+
+				// Remove the oldest data point if there are more than 20 points
+				if (this.chartData.labels.length > 20) {
+					this.chartData.labels.shift();
+					this.chartData.datasets[0].data.shift();
+				}
+
+				// Update the chart
+				this.myChart.update();
 			}
 
 		},
 		mounted() {
 			console.log('mounted!')
+			this.chartInitialized = false;
 			this.loadLog()
 			this.getSerialPorts()
 			this.update()
