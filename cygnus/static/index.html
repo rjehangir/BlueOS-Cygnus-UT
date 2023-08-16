@@ -27,7 +27,7 @@
 				<v-tabs-items v-model="tab">
 					<v-tab-item key="measurement">
 						<v-container fluid>
-							<v-row align="center">
+							<v-row>
 								<v-col cols="12" sm="4" md="4">
 									<v-select
 										v-model="selectedMaterial"
@@ -50,25 +50,28 @@
 							    </v-col>
 							    <v-col cols="12" sm="3" md="3">
 									<v-btn
-									@click="toggleIcon"
+									@click="toggleRun"
 									outlined
 									rounded
-									text
+									color="primary"
 									>
 									<v-icon large>{{ icon }}</v-icon>
 									</v-btn>
-								    <v-chip :color="chipColor" dark>
-								    	{{ is_valid ? 'Valid Measurement' : 'Invalid Measurement' }}
+									<v-chip :color="runChipColor" dark>
+									    <v-progress-circular
+									    	v-if="run"
+									        indeterminate
+									        :size="20"
+									        :width="3"
+									        color="white"
+									    ></v-progress-circular>&nbsp;{{runChipText}}
 									</v-chip>
-							    </v-col>
-							    <v-col cols="12" sm="3" md="3">
-								    <!-- -->
+									
 							    </v-col>
 							</v-row>
 							<v-row>
-
 							    <v-col cols="12" sm="4" md="4">
-									<v-card outlined color="#2699d0" dark height="300">
+									<v-card outlined :color="thicknessCardColor" dark height="300">
 										<v-list-item two-line>
 											<v-list-item-content>
 										        <div class="text-overline mb-4">
@@ -101,12 +104,12 @@
 
 								
 
-								<v-col cols="12" sm="3" md="3">
+								<v-col cols="12" sm="4" md="4">
 									<v-card outlined color=orange dark>
 										<v-list-item two-line>
 											<v-list-item-content>
 										        <div class="text-overline mb-4">
-										          <v-icon large>mdi-counter</v-icon> Echoes
+										          <v-icon large>mdi-arrow-expand-horizontal</v-icon> Echoes
 										        </div>
 										        <v-list-item-title class="text-h5 mb-1" style="font-family:consolas !important;">
 										          {{echo_count}} echoes
@@ -116,7 +119,7 @@
 									</v-card>
 								</v-col>
 
-								<v-col cols="12" sm="3" md="3">
+								<v-col cols="12" sm="4" md="4">
 									<v-card outlined color=grey dark>
 										<v-list-item two-line>
 											<v-list-item-content>
@@ -131,22 +134,7 @@
 									</v-card>
 								</v-col>	
 
-								<v-col cols="12" sm="3" md="3">
-									<v-card outlined color=red dark>
-										<v-list-item two-line>
-											<v-list-item-content>
-										        <div class="text-overline mb-4">
-										          <v-icon large>mdi-cog</v-icon> Something
-										        </div>
-										        <v-list-item-title class="text-h5 mb-1">
-										          {{ is_valid ? 'Valid' : 'Invalid' }}
-										        </v-list-item-title>
-									      	</v-list-item-content>
-									      </v-list-item>
-									</v-card>
-								</v-col>	
-
-								<v-col cols="12" sm="3" md="3">
+								<v-col cols="12" sm="4" md="4">
 									<v-card outlined color=green dark>
 										<v-list-item two-line>
 											<v-list-item-content>
@@ -170,9 +158,6 @@
 											<v-btn v-if="selectedItems.length > 0" fab color="red" dark small icon @click="deleteSelected">
 											  <v-icon>mdi-delete</v-icon>
 											</v-btn>
-											<v-btn color="primary" dark @click="logMeasurement">
-									          Log Measurement
-									        </v-btn>
 										</v-toolbar>
 										<v-data-table
 										v-model="selectedItems"
@@ -278,10 +263,15 @@
 	];
 	new Vue({
 		el: '#app',
-		vuetify: new Vuetify(),
+		vuetify: new Vuetify({
+			theme: {
+      			dark: false, // Enable light mode
+      		},
+    	}),
 		data() {
 			return {
 				status: "",
+				run: true,
 				enabled: null,
 				port: null,
 				baud: 2400,
@@ -297,7 +287,7 @@
         		materials: this.getMaterials(),
         		selectedMaterial: 'Steel',
         		soundVelocity: 0,
-        		icon: 'mdi-play', // Initial icon is the play icon
+        		icon: 'mdi-stop', // Initial icon is the play icon
 				headers: [
 					{ text: 'Date/Time', align: 'start', sortable: false, value: 'date' },
 					{ text: 'Description (click to edit)', sortable: false, value: 'name' },
@@ -337,6 +327,18 @@
 			chipColor() {
 		        return this.is_valid ? 'green' : 'grey';
 		    },
+
+		    runChipColor() {
+		    	return this.run ? 'green' : 'grey';
+		    },
+
+			runChipText() {
+		    	return this.run ? 'Running' : 'Stopped';
+		    },		    
+
+		    thicknessCardColor() {
+		    	return this.is_valid ? '#2699d0' : '#909d8d';
+		    }
 		},
 		methods: {
 			update() {
@@ -345,35 +347,37 @@
 					this.initChart()
 				}
 
-				axios.get('/get_data', { timeout: 1000 })
-					.then((response) => {
-						// handle success
-						let data = response.data
-						this.status = data.status
-						this.enabled = data.enabled
-						this.port = data.port
-						this.baud = data.baud
-						this.resolution = data.resolution
-						this.units = data.units
-						this.echo_count = data.echo_count
-						this.is_valid = data.is_valid
-						this.raw_thickness = data.raw_thickness
-						this.thickness = data.thickness
-						this.selectedMaterial = data.material
-						if ( this.soundVelocity === 0 || !this.isCustomMaterial ) {
-							this.soundVelocity = data.sound_velocity
-						}
+				if ( this.run ) {
+					axios.get('/get_data', { timeout: 1000 })
+						.then((response) => {
+							// handle success
+							let data = response.data
+							this.status = data.status
+							this.enabled = data.enabled
+							this.port = data.port
+							this.baud = data.baud
+							this.resolution = data.resolution
+							this.units = data.units
+							this.echo_count = data.echo_count
+							this.is_valid = data.is_valid
+							this.raw_thickness = data.raw_thickness
+							this.thickness = data.thickness
+							this.selectedMaterial = data.material
+							if ( this.soundVelocity === 0 || !this.isCustomMaterial ) {
+								this.soundVelocity = data.sound_velocity
+							}
 
-						this.setThicknessString()
+							this.setThicknessString()
 
-						if ( this.chartInitialized ) {
-							this.addDataPoint(this.thickness)
-						}
-					})
-					.catch((error) => {
-						this.status = `Unable to talk to backend service: ${error}`
-						console.log(error);
-					})
+							if ( this.chartInitialized ) {
+								this.addDataPoint(this.thickness)
+							}
+						})
+						.catch((error) => {
+							this.status = `Unable to talk to backend service: ${error}`
+							console.log(error);
+						})
+				}
 			},
 
 			initChart() {
@@ -423,13 +427,18 @@
 		        this.chartInitialized = true;
 			},
 
-			toggleIcon() {
+			toggleRun() {
 		        // Toggle the icon between play and stop
 		        this.icon = this.icon === 'mdi-play' ? 'mdi-stop' : 'mdi-play';
+		        this.run = !this.run
 		    },
 
 			setThicknessString() {
-				this.thickness_str = this.thickness.toFixed(2) + " " + this.units
+				if ( this.is_valid ) {
+					this.thickness_str = this.thickness.toFixed(2) + " " + this.units
+				} else {
+					this.thickness_str = "- mm"
+				}
 			},
 
 			getSoundVelocityByMaterial(material) {
