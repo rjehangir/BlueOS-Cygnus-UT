@@ -22,7 +22,6 @@ setup(
         "itsdangerous == 0.24",
         "Jinja2 == 2.10",
         "click == 7.1.2",
-        "Werkzeug==1.0.1",
         "pyserial==3.5",
         "requests",
     ],

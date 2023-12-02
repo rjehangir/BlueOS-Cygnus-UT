@@ -16,7 +16,8 @@ LABEL permissions='\
    "8000/tcp": {}\
   },\
   "HostConfig": {\
-    "Binds":["/root/.config:/root/.config"],\
+    "Privileged": true,\
+    "Binds":["/root/.config:/root/.config","/dev:/dev"],\
     "PortBindings": {\
       "8000/tcp": [\
         {\

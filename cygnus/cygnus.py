@@ -246,9 +246,10 @@ class CygnusDriver(threading.Thread):
             self.ser.open()
         except serial.SerialException as e:
             print("Serial port error:", str(e))
-            self.report_status(f"Failed to open device at {self.serial_port}/{self.baud}.")
+            self.report_status(f"Failed to open device {self.serial_port} at {self.baud}.")
+            self.report_status(str(e))
         if self.ser.is_open:
-            self.report_status(f"Device connected at {self.serial_port}/{self.baud}.")
+            self.report_status(f"Connected to {self.serial_port} at {self.baud}.")
             return
 
     def reconnect(self):
@@ -316,8 +317,8 @@ class CygnusDriver(threading.Thread):
 
     def run(self):
         self.load_settings()
-        self.wait_for_vehicle()
-        self.setup_mavlink()
+        #self.wait_for_vehicle()
+        #self.setup_mavlink()
         time.sleep(1)
         self.report_status("Running")
         self.last_recv_time = time.time()
