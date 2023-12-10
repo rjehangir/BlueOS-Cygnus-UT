@@ -1,0 +1,476 @@
+<html>
+
+<head>
+	<title>Cygnus UT Gauge</title>
+
+	<link href="/static/css/materialdesignicons.min.css" rel="stylesheet">
+	<link href="/static/css/vuetify.min.css" rel="stylesheet">
+	<link href="/static/css/style.css" rel="stylesheet">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+
+<div id="app">
+    <v-app class="transparent-widget">
+        <v-main>
+            <v-container class="widget">
+                <div class="flex items-center">
+                    <!-- Icon on the left -->
+                    <v-icon large class="icon">mdi-arrow-collapse-horizontal</v-icon>
+
+                    <!-- Thickness measurement and label on the right of the icon -->
+                    <div class="measurement-container">
+                        <!-- Thickness measurement (large and on top) -->
+                        <div class="font-mono text-xl font-semibold">{{thickness_str}}</div>
+                        <!-- Label "Thickness" (small and below the measurement) -->
+                        <div class="text-sm font-semibold">Thickness</div>
+                    </div>
+                </div>
+
+                <!-- Log button -->
+                <v-btn outlined rounded text small class="log-button" @click="logMeasurement" style="background-color: white; color: #2699d0;font-weight:bold">Log</v-btn>
+            </v-container>
+        </v-main>
+    </v-app>
+</div>
+
+<script src="/static/js/vue.js"></script>
+<script src="/static/js/vuetify.js"></script>
+<script src="/static/js/axios.min.js"></script>
+<script src="/static/js/chart.js"></script>
+
+<script>
+	Vue.config.devtools = true;
+	const materialData = [
+		{ material: "CUSTOM", soundVelocity: 0 },
+		{ material: "Aluminum (alloyed)", soundVelocity: 6380 },
+		{ material: "Aluminum (2014)", soundVelocity: 6320 },
+		{ material: "Aluminum (2024 T4)", soundVelocity: 6370 },
+		{ material: "Aluminum (2117 T4)", soundVelocity: 6500 },
+		{ material: "Brass (CuZn40)", soundVelocity: 4400 },
+		{ material: "Brass (Naval)", soundVelocity: 4330 },
+		{ material: "Brass (CuZn30)", soundVelocity: 4700 },
+		{ material: "Copper", soundVelocity: 4850 },
+		{ material: "Grey Cast Iron", soundVelocity: 4600 },
+		{ material: "Inconel", soundVelocity: 5700 },
+		{ material: "Lead", soundVelocity: 2150 },
+		{ material: "Monel", soundVelocity: 5400 },
+		{ material: "Nickel", soundVelocity: 5630 },
+		{ material: "Phosphor Bronze", soundVelocity: 3530 },
+		{ material: "Mild Steel", soundVelocity: 5920 },
+		{ material: "Tool Steel", soundVelocity: 5870 },
+		{ material: "Stainless Steel 302", soundVelocity: 5660 },
+		{ material: "Stainless Steel 347", soundVelocity: 5790 },
+		{ material: "Stainless Steel 314", soundVelocity: 5715 },
+		{ material: "Stainless Steel 316", soundVelocity: 5750 },
+		{ material: "F51 Duplex Steel UNS S31803", soundVelocity: 5733 },
+		{ material: "Core Ten Steel EN12223 S355-J0", soundVelocity: 5920 },
+		{ material: "Tin", soundVelocity: 3320 },
+		{ material: "Titanium", soundVelocity: 6165 },
+		{ material: "Tungsten Carbide", soundVelocity: 6660 },
+		{ material: "Epoxy Resin", soundVelocity: 2500 },
+		{ material: "Acrylic", soundVelocity: 2730 },
+		{ material: "Nylon (Polyamide)", soundVelocity: 2620 }
+	];
+	new Vue({
+		el: '#app',
+		vuetify: new Vuetify({
+			theme: {
+      			dark: false, // Enable light mode
+      		},
+    	}),
+		data() {
+			return {
+				status: "",
+				run: true,
+				enabled: null,
+				port: null,
+				baud: 2400,
+				serialPorts: ["Demo Mode"],
+				thickness: null,
+				thickness_str: null,
+				echo_count: 0,
+				depth: 0,
+				is_valid: false,
+				tab: "measurement",
+				max50chars: v => v.length <= 50 || 'Input too long!',
+        		pagination: {},
+        		materials: this.getMaterials(),
+        		selectedMaterial: 'Steel',
+        		soundVelocity: 0,
+        		icon: 'mdi-stop', // Initial icon is the play icon
+				headers: [
+					{ text: 'Date/Time', align: 'start', sortable: false, value: 'date' },
+					{ text: 'Description (click to edit)', sortable: false, value: 'name' },
+					{ text: 'Material', sortable: false, value: 'material' },
+					{ text: 'Thickness', sortable: false, value: 'thickness_str' },
+				],
+				log: [],
+				selectedItems: [],
+				myChart: null,
+		        chartData: {
+		          labels: [],
+		          datasets: [{
+		            label: 'Data Points',
+		            backgroundColor: '#2699d0', // Blue color for bars
+					borderColor: '#2699d0', // Blue border color for bars
+		            borderWidth: 1,
+		            data: []
+		          }]
+		        }
+			}
+		},
+		computed: {
+			isCustomMaterial() {
+			  	return this.selectedMaterial === "CUSTOM"; // Check if material is "CUSTOM"
+			},
+
+			inputPattern() {
+				if (this.isCustomMaterial) {
+					// If it's CUSTOM, create a pattern for the allowed range
+					return `^(0|[1-9]\\d{0,3}|20000)$`;
+				} else {
+					// If it's not CUSTOM, an empty pattern allows any value
+					return "";
+				}
+			},
+
+			chipColor() {
+		        return this.is_valid ? 'green' : 'grey';
+		    },
+
+		    runChipColor() {
+		    	return this.run ? 'green' : 'grey';
+		    },
+
+			runChipText() {
+		    	return this.run ? 'Running' : 'Stopped';
+		    },		    
+
+		    thicknessCardColor() {
+		    	return this.is_valid ? '#2699d0' : '#909d8d';
+		    }
+		},
+		methods: {
+			update() {
+				// Create the chart if is hasn't already. This if ensures that the element is available.
+				if ( !this.chartInitialized && document.getElementById('chartCanvas') !== null ) {
+					this.initChart()
+				}
+
+				if ( this.run ) {
+					axios.get('/get_data', { timeout: 1000 })
+						.then((response) => {
+							// handle success
+							let data = response.data
+							this.status = data.status
+							this.enabled = data.enabled
+							this.port = data.port
+							this.baud = data.baud
+							this.resolution = data.resolution
+							this.units = data.units
+							this.echo_count = data.echo_count
+							this.is_valid = data.is_valid
+							this.raw_thickness = data.raw_thickness
+							this.thickness = data.thickness
+							this.selectedMaterial = data.material
+							if ( this.soundVelocity === 0 || !this.isCustomMaterial ) {
+								this.soundVelocity = data.sound_velocity
+							}
+
+							this.setThicknessString()
+
+							if ( this.chartInitialized ) {
+								this.addDataPoint(this.thickness)
+							}
+						})
+						.catch((error) => {
+							this.status = `Unable to talk to backend service: ${error}`
+							console.log(error);
+						})
+				}
+			},
+
+			initChart() {
+				const ctx = document.getElementById('chartCanvas').getContext('2d');
+		        this.myChart = new Chart(ctx, {
+		          type: 'bar',
+		          data: this.chartData,
+		          options: {
+		            responsive: true,
+		            maintainAspectRatio: false,
+		            scales: {
+		            	x: {
+							// title: {
+							// 	display: true,
+							// 	text: 'Measurements',
+							// 	font: {
+							// 		size: 16 // Increase font size for x-axis title
+							// 	}	
+							// }
+						},
+						y: {
+							beginAtZero: true,
+							title: {
+								display: true,
+							 	text: 'Thickness (mm)',
+							 	font: {
+									size: 16 // Increase font size for x-axis title
+								}	
+							}
+						}
+		            },
+		            plugins: {
+		            	legend: {
+		            		display: false
+		            	}
+		            },
+		            animation: {
+				    	duration: 0 // Set animation duration to 0 to remove animation
+				    }
+		          }
+		        });
+
+		        // Add 20 data points so the chart is fixed width
+		        for (let i = 0; i < 20; i++) {
+			      	this.addDataPoint(0)
+			    }
+		        this.chartInitialized = true;
+			},
+
+			toggleRun() {
+		        // Toggle the icon between play and stop
+		        this.icon = this.icon === 'mdi-play' ? 'mdi-stop' : 'mdi-play';
+		        this.run = !this.run
+		    },
+
+			setThicknessString() {
+				if ( this.is_valid ) {
+					this.thickness_str = this.thickness.toFixed(2) + " " + this.units
+				} else {
+					this.thickness_str = "- mm"
+				}
+			},
+
+			getSoundVelocityByMaterial(material) {
+				const foundMaterial = materialData.find(item => item.material === material);
+				if (foundMaterial) {
+					return foundMaterial.soundVelocity;
+				} else {
+					return null; // Return null if the material is not found in the data
+				}
+			},
+
+			soundVelocityValue() {
+				if (this.selectedMaterial === "CUSTOM") {
+					return this.soundVelocity; // If material is "CUSTOM", allow input
+				} else {
+					return getSoundVelocityByMaterial(this.selectedMaterial);
+				}
+		    },
+
+		    onSoundVelocityInput() {
+				this.soundVelocity = this.soundVelocity.replace(/[^\d.-]/g, '');
+			},
+
+			onMaterialChange() {
+				if ( !this.isCustomMaterial ) {
+					this.soundVelocity = this.getSoundVelocityByMaterial(this.selectedMaterial)
+				}
+				const request = new XMLHttpRequest();
+				request.timeout = 800;
+				request.open('GET', 'setmaterial/' + encodeURIComponent(encodeURIComponent(this.selectedMaterial)) + '/' + this.soundVelocity, true);
+				request.send();
+			},
+
+			getMaterials() {
+				return materialData.map(item => item.material);
+			},
+
+			/* Toggles driver on/off */
+			setEnabled(event) {
+				const request = new XMLHttpRequest();
+				request.timeout = 800;
+				request.open('GET', 'enable/' + event, true);
+				request.send();
+			},
+
+			/* Toggles driver on/off */
+			setPort(port) {
+				const request = new XMLHttpRequest();
+				request.timeout = 800;
+				request.open('GET', 'setserialport/' + encodeURIComponent(encodeURIComponent(port)), true);
+				request.send();
+			},
+
+			/* Toggles driver on/off */
+			setBaud(baud) {
+				const request = new XMLHttpRequest();
+				request.timeout = 800;
+				request.open('GET', 'setbaud/' + baud, true);
+				request.send();
+			},
+
+			getCurrentDateTime() {
+			  const currentDate = new Date();
+
+			  const year = currentDate.getFullYear();
+			  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+			  const day = String(currentDate.getDate()).padStart(2, '0');
+			  const hours = String(currentDate.getHours()).padStart(2, '0');
+			  const minutes = String(currentDate.getMinutes()).padStart(2, '0');
+			  const seconds = String(currentDate.getSeconds()).padStart(2, '0');
+
+			  const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+			  return formattedDate;
+			},
+
+			removeLastNumberFromString(inputString) {
+			  // Find the last number in the string using a regular expression
+			  const regex = /(\d+)(?!.*\d)/;
+			  const match = inputString.match(regex);
+
+			  // Check if a number was found
+			  if (match) {
+			    // Extract the number from the match
+			    const number = parseInt(match[0]);
+
+			    // Remove the number from the string
+			    const modifiedString = inputString.replace(regex, '');
+
+			    // Return the modified string and the extracted number as an object
+			    return { modifiedString, number };
+			  }
+
+			  // If no number was found, return the original string and null for the number
+			  return { modifiedString: inputString, number: null };
+			},
+
+			deleteSelected() {
+		      // Deletion logic here
+		      this.log = this.log.filter(item => !this.selectedItems.includes(item));
+		      this.selectedItems = [];
+		      this.saveLog();
+		    },
+
+			logMeasurement() {
+				var logName = '';
+
+				if ( this.log.length === 0 ) {
+					logName = "Logged measurement";
+				}
+				if ( this.log.length > 0 ) {
+					var last = this.removeLastNumberFromString(this.log[0].name);
+					var lastName = last.modifiedString;
+					var number = last.number;
+
+					if ( lastName !== '' ) {
+						if ( number == null ) {
+							logName = lastName + " 1";
+						} else {
+							logName = lastName + (number+1);
+						}
+					}
+				}
+
+				newMeasurement = {
+		      		date: this.getCurrentDateTime(),
+		      		name: logName,
+		      		material: this.selectedMaterial,
+		      		thickness: this.thickness,
+		      		thickness_str: this.thickness_str
+		      	}
+
+		      	this.log.unshift(newMeasurement)
+		      	this.saveLog()
+		    },
+
+		    getSerialPorts() {
+		    	axios.get('/get_serial_ports', { timeout: 1000 })
+					.then((response) => {
+						// handle success
+						let data = response.data
+						if (this.port !== null && !data.includes(this.port) && this.port !== "Demo Mode") {
+							data.unshift(this.port) // Always include the last used port, even if it doesn't exist, just so it doesn't get removed unless the user removes it
+						}
+						data.unshift("Demo Mode")
+						this.serialPorts = data
+					})
+					.catch((error) => {
+						this.status = `Unable to talk to backend service: ${error}`
+						console.log(error);
+					})
+		    },
+
+		    saveLog() {
+				const request = new XMLHttpRequest();
+				request.timeout = 800;
+				request.open('POST', '/savelog', true);
+				request.setRequestHeader('Content-Type', 'application/json');
+				request.onreadystatechange = function() {
+				if (request.readyState === XMLHttpRequest.DONE) {
+				  if (request.status === 200) {
+				    console.log(request.responseText); // Handle the response data
+				  } else {
+				    console.error('Error:', request.status);
+				  }
+				}
+				};
+				request.onerror = function() {
+				console.error('Request error');
+				};
+				request.send(JSON.stringify(this.log))
+			},
+
+			loadLog() {
+				const request = new XMLHttpRequest();
+				request.open('GET', '/loadlog', true);
+
+				request.onreadystatechange = () => {
+				if (request.readyState === XMLHttpRequest.DONE) {
+				  if (request.status === 200) {
+				    const responseData = JSON.parse(request.responseText);
+				    // Handle the response data
+				    this.log = responseData;
+				  } else {
+				    console.error('Error:', request.status);
+				  }
+				}
+				};
+
+				request.onerror = function() {
+				console.error('Request error');
+				};
+
+				request.send();
+			},
+
+			addDataPoint(value) {
+				// Add a new data point
+				this.chartData.labels.push("");
+				this.chartData.datasets[0].data.push(value);
+
+				// Remove the oldest data point if there are more than 20 points
+				if (this.chartData.labels.length > 20) {
+					this.chartData.labels.shift();
+					this.chartData.datasets[0].data.shift();
+				}
+
+				// Update the chart
+				this.myChart.update();
+			}
+
+		},
+		mounted() {
+			console.log('mounted!')
+			this.chartInitialized = false;
+			this.loadLog()
+			this.getSerialPorts()
+			this.update()
+			setInterval(this.update, 1000)
+		}
+	})
+
+</script>
+
+</html>

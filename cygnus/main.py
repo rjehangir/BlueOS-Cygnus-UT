@@ -110,6 +110,10 @@ if __name__ == "__main__":
     def register_service():
         return app.send_static_file("service.json")
 
+    @app.route("/widget")
+    def widget():
+        return app.send_static_file("widget.html")
+
     @app.route("/")
     def root():
         return app.send_static_file("index.html")

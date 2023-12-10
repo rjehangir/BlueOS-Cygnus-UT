@@ -3,6 +3,52 @@
 	color: #000;
 }
 
+.transparent-widget {
+	background: #00000000 !important;
+}
+
+.widget {
+	background: #47556980 !important;
+	color: white !important;
+	display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.measurement-container {
+    display: inline-flex;
+    flex-direction: column;
+    margin-left: 10px; /* Adjust as needed for spacing */
+    line-height: 1.2rem;
+}
+
+.widget .v-icon {
+	color: white;
+}
+
+.font-semibold {
+	font-weight: 600;
+}
+
+.text-xl {
+	font-size: 1.25rem;
+}
+
+.text-sm {
+	font-size: 0.875rem;
+}
+
+.font-mono {
+	font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;
+}
+
+.widget-measurement {
+	line-height: 1.5rem;
+	font-weight: 600;
+	font-size: 1.25rem;
+	font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;
+}
+
 .theme--light.v-label {
     color: rgba(0,0,0,.87);
 }
